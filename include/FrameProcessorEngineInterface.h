@@ -1,9 +1,9 @@
 #pragma once
 
-namespace FPE {
+namespace fpe {
 
 enum class Response { noError };
 }
 
-extern "C" FPE::Response startFPE();
-extern "C" FPE::Response stopFPE();
+extern "C" fpe::Response startFPE();
+extern "C" fpe::Response stopFPE();

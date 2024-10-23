@@ -2,7 +2,7 @@
 
 #include "FrameProcessorEngineInterface.h"
 
-namespace FPE {
+namespace fpe {
 
 class FrameProcessorEngine {
 private:
@@ -15,4 +15,4 @@ public:
   Response stop();
 };
 
-} // namespace FPE
+} // namespace fpe

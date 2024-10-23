@@ -1,6 +1,6 @@
 #include "FrameProcessorEngine.h"
 
-namespace FPE {
+namespace fpe {
 
 FrameProcessorEngine::FrameProcessorEngine(/* args */) {}
 
@@ -10,4 +10,4 @@ Response FrameProcessorEngine::start() { return Response::noError; }
 
 Response FrameProcessorEngine::stop() { return Response::noError; }
 
-} // namespace FPE
+} // namespace fpe

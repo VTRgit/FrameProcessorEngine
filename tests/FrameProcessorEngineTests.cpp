@@ -1,7 +1,7 @@
 #include <FrameProcessorEngineInterface.h>
 #include <gtest/gtest.h>
 
-using namespace FPE;
+using namespace fpe;
 
 TEST(FrameProcessorEngineTests, StartStop) {
   ASSERT_EQ(startFPE(), Response::noError);
