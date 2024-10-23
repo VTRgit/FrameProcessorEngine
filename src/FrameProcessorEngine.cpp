@@ -1,5 +1,13 @@
 #include "FrameProcessorEngine.h"
 
-int add(int a, int b) {
-    return a + b;
-}
+namespace FPE {
+
+FrameProcessorEngine::FrameProcessorEngine(/* args */) {}
+
+FrameProcessorEngine::~FrameProcessorEngine() {}
+
+Response FrameProcessorEngine::start() { return Response::noError; }
+
+Response FrameProcessorEngine::stop() { return Response::noError; }
+
+} // namespace FPE
