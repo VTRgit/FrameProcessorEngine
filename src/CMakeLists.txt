@@ -1,7 +1,8 @@
 # Add the library
 add_library(FrameProcessorEngineLib
-    FrameProcessorEngineInterface.cpp
-    FrameProcessorEngine.cpp
+    frame_processor_engine_interface.cpp
+    frame_processor_engine.cpp
+    real_time_executor/real_time_executor.cpp
 )
 
 # Include directories

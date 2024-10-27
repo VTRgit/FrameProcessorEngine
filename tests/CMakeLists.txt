@@ -9,9 +9,9 @@ FetchContent_MakeAvailable(googletest)
 
 # Add the test executable
 add_executable(FrameProcessorEngineLibTests
-  FrameProcessorEngineTests.cpp
-  RingBufferMultiThreadTests.cpp
-  RingBufferTests.cpp
+  frame_processor_engine_tests.cpp
+  ring_buffer_tests/ring_buffer_multi_thread_tests.cpp
+  ring_buffer_tests/ring_buffer_typed_tests.cpp
 )
 
 # Link Google Test and the library

@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <iostream>
 
+namespace fpe {
+
 template <typename T>
 class RingBuffer {
 public:
@@ -84,4 +86,5 @@ std::size_t RingBuffer<T>::size() const
     } else {
         return capacity - current_head + current_tail;
     }
+}
 }

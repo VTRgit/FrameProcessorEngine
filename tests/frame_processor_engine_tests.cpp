@@ -1,4 +1,4 @@
-#include <FrameProcessorEngineInterface.h>
+#include <fpe/frame_processor_engine_interface.h>
 #include <gtest/gtest.h>
 
 using namespace fpe;

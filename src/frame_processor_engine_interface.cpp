@@ -1,5 +1,4 @@
-// FrameProcessorInterface.h
-#include "FrameProcessorEngine.h"
+#include "frame_processor_engine.hpp"
 
 using namespace fpe;
 

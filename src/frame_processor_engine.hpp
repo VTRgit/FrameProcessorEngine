@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FrameProcessorEngineInterface.h"
+#include <fpe/frame_processor_engine_interface.h>
 
 namespace fpe {
 
