@@ -9,5 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(src)
 add_subdirectory(tests)
 
+# Examples
+add_executable(example examples/example.cpp)
+target_link_libraries(example PRIVATE FrameProcessorEngineLib)
+
 # Enable testing
 enable_testing()

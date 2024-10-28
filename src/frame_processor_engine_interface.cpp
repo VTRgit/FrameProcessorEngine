@@ -1,4 +1,4 @@
-#include "frame_processor_engine.hpp"
+#include <fpe/frame_processor_engine.hpp>
 
 using namespace fpe;
 
