@@ -2,10 +2,10 @@
 
 namespace fpe {
 
-enum class Response { 
-    noError, ///< No error occurred.
-    allocationError, ///< Memory allocation failed.
-    bufferEmpty ///< The buffer is empty.
+enum class Response {
+  noError,         ///< No error occurred.
+  allocationError, ///< Memory allocation failed.
+  bufferEmpty      ///< The buffer is empty.
 };
 }
 

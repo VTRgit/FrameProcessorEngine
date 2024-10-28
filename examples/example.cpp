@@ -1,7 +1,9 @@
 #include <fpe/frame_processor_engine.hpp>
 
 int main() {
-  fpe::FrameProcessorEngine frameProcessorEngine;
+  fpe::RingBuffer<int> ringBuffers[5];
+
+  fpe::FrameProcessorEngine frameProcessorEngine(ringBuffers);
   frameProcessorEngine.start();
   frameProcessorEngine.stop();
 

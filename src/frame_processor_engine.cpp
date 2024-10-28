@@ -3,8 +3,11 @@
 
 namespace fpe {
 
-FrameProcessorEngine::FrameProcessorEngine(/* args */) {
-  spdlog::info("initializing FrameProcessorEngine");
+FrameProcessorEngine::FrameProcessorEngine(
+    std::span<const RingBuffer<int>> inputBuffers) {
+  spdlog::info("\nInitializing FrameProcessorEngine \n\tinputBuffers: "
+               "{}\n\tbuffersSize: {}\n",
+               inputBuffers.size(), inputBuffers[0].length());
 }
 
 FrameProcessorEngine::~FrameProcessorEngine() {}
