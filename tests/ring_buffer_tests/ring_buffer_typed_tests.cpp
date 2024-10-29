@@ -1,61 +1,101 @@
 #include <fpe/ring_buffer.hpp>
-
 #include <gtest/gtest.h>
 
+// Helper template to extract type and size from tuple
+template <typename T> struct RingBufferTestTraits;
+
+template <typename ValueType, std::size_t Size>
+struct RingBufferTestTraits<
+    std::tuple<ValueType, std::integral_constant<std::size_t, Size>>> {
+  using Type = ValueType;
+  static constexpr std::size_t size = Size;
+};
+
+// Define the test fixture for RingBuffer with various types and capacities
 template <typename T> class RingBufferTypedTest : public ::testing::Test {
 protected:
-  fpe::RingBuffer<T> buffer;
+  using ValueType = typename RingBufferTestTraits<T>::Type;
+  static constexpr std::size_t Size = RingBufferTestTraits<T>::size;
 
-  RingBufferTypedTest() : buffer(5) {}
+  fpe::RingBuffer<ValueType, Size> buffer;
+
+  RingBufferTypedTest() : buffer() {}
 
   void SetUp() override {
-    // Optional: Code here will be called immediately after the constructor
-    // (right before each test).
+    // Optional setup code if needed
   }
 
   void TearDown() override {
-    // Optional: Code here will be called immediately after each test (right
-    // before the destructor).
+    // Optional teardown code if needed
   }
 };
 
-using MyTypes = ::testing::Types<int, float, double>;
-TYPED_TEST_SUITE(RingBufferTypedTest, MyTypes);
+// Define the types and sizes to test with Google Test Types
+using TestTypes = ::testing::Types<
+    std::tuple<int, std::integral_constant<std::size_t, 5>>,
+    std::tuple<float, std::integral_constant<std::size_t, 10>>,
+    std::tuple<double, std::integral_constant<std::size_t, 15>>>;
 
+TYPED_TEST_SUITE(RingBufferTypedTest, TestTypes);
+
+// Define each test with TYPED_TEST
 TYPED_TEST(RingBufferTypedTest, PushPopTest) {
-  EXPECT_TRUE(this->buffer.push(1));
-  EXPECT_TRUE(this->buffer.push(2));
-  EXPECT_TRUE(this->buffer.push(3));
+  using ValueType = typename TestFixture::ValueType;
+  auto &buffer = TestFixture::buffer;
 
-  TypeParam item;
-  EXPECT_TRUE(this->buffer.pop(item));
-  EXPECT_EQ(item, 1);
-
-  EXPECT_TRUE(this->buffer.pop(item));
-  EXPECT_EQ(item, 2);
-
-  EXPECT_TRUE(this->buffer.pop(item));
-  EXPECT_EQ(item, 3);
-
-  EXPECT_FALSE(this->buffer.pop(item)); // Buffer should be empty
+  // Test pushing and popping a value
+  EXPECT_TRUE(buffer.push(static_cast<ValueType>(42)));
+  ValueType value;
+  EXPECT_TRUE(buffer.pop(value));
+  EXPECT_EQ(value, static_cast<ValueType>(42));
 }
 
-TYPED_TEST(RingBufferTypedTest, BufferSizeTest) {
-  EXPECT_EQ(this->buffer.size(), 0);
+TYPED_TEST(RingBufferTypedTest, SizeTest) {
+  auto &buffer = TestFixture::buffer;
+  EXPECT_EQ(buffer.size(), 0); // Buffer initially empty
 
-  this->buffer.push(1);
-  this->buffer.push(2);
-  this->buffer.push(3);
+  // Push items up to capacity
+  for (std::size_t i = 0; i < TestFixture::Size; ++i) {
+    buffer.push(static_cast<typename TestFixture::ValueType>(i));
+  }
+  EXPECT_EQ(buffer.size(), TestFixture::Size); // Should match capacity
 
-  EXPECT_EQ(this->buffer.size(), 3);
+  // Pop all items and check size returns to 0
+  typename TestFixture::ValueType value;
+  for (std::size_t i = 0; i < TestFixture::Size; ++i) {
+    buffer.pop(value);
+  }
+  EXPECT_EQ(buffer.size(), 0);
+}
 
-  TypeParam item;
-  this->buffer.pop(item);
-  EXPECT_EQ(this->buffer.size(), 2);
+TYPED_TEST(RingBufferTypedTest, OverflowTest) {
+  using ValueType = typename TestFixture::ValueType;
+  auto &buffer = TestFixture::buffer;
+  constexpr std::size_t bufferSize = TestFixture::Size;
 
-  this->buffer.pop(item);
-  EXPECT_EQ(this->buffer.size(), 1);
+  // Fill the buffer to test overflow behavior
+  for (std::size_t i = 0; i < bufferSize; ++i) {
+    buffer.push(static_cast<ValueType>(i));
+  }
 
-  this->buffer.pop(item);
-  EXPECT_EQ(this->buffer.size(), 0);
+  // The next push should overwrite the oldest item
+  EXPECT_TRUE(buffer.push(static_cast<ValueType>(99)));
+
+  // Pop all items and verify the overwritten behavior
+  ValueType value;
+  for (std::size_t i = 1; i < bufferSize; ++i) {
+    EXPECT_TRUE(buffer.pop(value));
+    EXPECT_EQ(value, static_cast<ValueType>(i));
+  }
+  EXPECT_TRUE(buffer.pop(value));
+  EXPECT_EQ(value, static_cast<ValueType>(99));
+}
+
+TYPED_TEST(RingBufferTypedTest, EmptyPopTest) {
+  using ValueType = typename TestFixture::ValueType;
+  auto &buffer = TestFixture::buffer;
+
+  // Test pop fails on empty buffer
+  ValueType value;
+  EXPECT_FALSE(buffer.pop(value));
 }

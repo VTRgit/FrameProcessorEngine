@@ -1,16 +1,16 @@
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <cstddef>
 #include <iostream>
-#include <vector>
 
 namespace fpe {
 
-template <typename T> class RingBuffer {
+template <typename T, std::size_t Size> class RingBuffer {
 public:
-  // Constructor to initialize the buffer with a given size
-  explicit RingBuffer(std::size_t size = 10);
+  // Default constructor to initialize the buffer
+  RingBuffer();
 
   // Adds an item to the buffer, overwrites the oldest item if the buffer is
   // full
@@ -27,20 +27,20 @@ public:
   std::size_t length() const;
 
 private:
-  std::vector<T> buffer;         // The actual buffer to store items
+  std::array<T, Size> buffer;    // The actual buffer to store items
   std::atomic<std::size_t> head; // Index of the front element (oldest)
   std::atomic<std::size_t> tail; // Index of the next write position
-  const std::size_t capacity;    // Total capacity of the buffer
+  static constexpr std::size_t capacity = Size; // Total capacity of the buffer
 };
 
 // Implementation of RingBuffer methods
 
-template <typename T>
-RingBuffer<T>::RingBuffer(std::size_t size)
-    : buffer(size), head(0), tail(0), capacity(size) {}
+template <typename T, std::size_t Size>
+RingBuffer<T, Size>::RingBuffer() : head(0), tail(0) {}
 
 // Pushes an item to the buffer, overwriting the oldest element if full
-template <typename T> bool RingBuffer<T>::push(const T &item) {
+template <typename T, std::size_t Size>
+bool RingBuffer<T, Size>::push(const T &item) {
   std::size_t current_tail = tail.load(std::memory_order_relaxed);
   std::size_t next_tail = (current_tail + 1) % capacity;
 
@@ -57,7 +57,7 @@ template <typename T> bool RingBuffer<T>::push(const T &item) {
 }
 
 // Pops an item from the buffer, returning false if the buffer is empty
-template <typename T> bool RingBuffer<T>::pop(T &item) {
+template <typename T, std::size_t Size> bool RingBuffer<T, Size>::pop(T &item) {
   std::size_t current_head = head.load(std::memory_order_relaxed);
 
   // Check if the buffer is empty
@@ -71,18 +71,22 @@ template <typename T> bool RingBuffer<T>::pop(T &item) {
 }
 
 // Returns the current number of elements in the buffer
-template <typename T> std::size_t RingBuffer<T>::size() const {
+template <typename T, std::size_t Size>
+std::size_t RingBuffer<T, Size>::size() const {
   std::size_t current_head = head.load(std::memory_order_relaxed);
   std::size_t current_tail = tail.load(std::memory_order_relaxed);
 
   if (current_tail >= current_head) {
     return current_tail - current_head;
   } else {
-    return capacity - current_head + current_tail;
+    return capacity - (current_head - current_tail);
   }
 }
 
-template <typename T> std::size_t RingBuffer<T>::length() const {
+// Returns the total capacity of the buffer
+template <typename T, std::size_t Size>
+std::size_t RingBuffer<T, Size>::length() const {
   return capacity;
 }
+
 } // namespace fpe

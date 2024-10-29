@@ -9,9 +9,10 @@
 constexpr int BUFFER_SIZE = 10; // Adjust the buffer size as needed
 
 // A simple test fixture for RingBuffer
-template <typename T> class RingBufferTest : public ::testing::Test {
+template <typename T, std::size_t Size>
+class RingBufferTest : public ::testing::Test {
 public:
-  fpe::RingBuffer<T> buffer{BUFFER_SIZE};
+  fpe::RingBuffer<T, Size> buffer;
 
   // Function to push elements into the buffer from multiple threads
   void pushElements(int thread_id, int count) {
@@ -32,7 +33,7 @@ public:
   }
 };
 
-using RingBufferMultithreadTests = RingBufferTest<int>;
+using RingBufferMultithreadTests = RingBufferTest<int, BUFFER_SIZE>;
 
 // Test for multithreaded pushing
 TEST_F(RingBufferMultithreadTests, MultiThreadedPush) {
@@ -69,7 +70,7 @@ TEST_F(RingBufferMultithreadTests, MultiThreadedPop) {
 
   // Start multiple threads to pop elements
   for (int i = 0; i < NUM_THREADS; ++i) {
-    threads.emplace_back(&RingBufferTest<int>::popElements, this,
+    threads.emplace_back(&RingBufferTest<int, BUFFER_SIZE>::popElements, this,
                          std::ref(popped), ELEMENTS_PER_THREAD);
   }
 

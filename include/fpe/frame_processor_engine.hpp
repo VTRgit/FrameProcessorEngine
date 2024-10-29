@@ -7,14 +7,17 @@
 namespace fpe {
 
 class FrameProcessorEngine {
-private:
-  /* data */
 public:
-  FrameProcessorEngine(std::span<const RingBuffer<int>> inputBuffers);
+  template <typename T, std::size_t Size>
+  FrameProcessorEngine(std::span<const RingBuffer<T, Size>> inputBuffers);
+
   ~FrameProcessorEngine();
 
   Response start();
   Response stop();
 };
 
+template <typename T, std::size_t Size>
+FrameProcessorEngine::FrameProcessorEngine(
+    std::span<const RingBuffer<T, Size>> inputBuffers) {}
 } // namespace fpe

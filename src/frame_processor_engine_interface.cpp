@@ -2,9 +2,12 @@
 
 using namespace fpe;
 
-static RingBuffer<int> ringBuffers[5];
+// Allocating buffers in the stack
+static RingBuffer<int, 10> ringBuffers[5];
+static std::span<const fpe::RingBuffer<int, 10>> bufferSpan(ringBuffers);
+
 // Creating a global instance of FrameProcessor
-static FrameProcessorEngine frameProcessorEngine(ringBuffers);
+static FrameProcessorEngine frameProcessorEngine(bufferSpan);
 
 // Function to start the frame processor
 extern "C" fpe::Response startFPE() { return frameProcessorEngine.start(); }
