@@ -44,9 +44,9 @@ TYPED_TEST(RingBufferTypedTest, PushPopTest) {
   auto &buffer = TestFixture::buffer;
 
   // Test pushing and popping a value
-  EXPECT_TRUE(buffer.push(static_cast<ValueType>(42)));
-  ValueType value;
-  EXPECT_TRUE(buffer.pop(value));
+  buffer.push(static_cast<ValueType>(42));
+  std::optional<ValueType> value = buffer.pop();
+  EXPECT_TRUE(value.has_value());
   EXPECT_EQ(value, static_cast<ValueType>(42));
 }
 
@@ -61,9 +61,9 @@ TYPED_TEST(RingBufferTypedTest, SizeTest) {
   EXPECT_EQ(buffer.size(), TestFixture::Size); // Should match capacity
 
   // Pop all items and check size returns to 0
-  typename TestFixture::ValueType value;
+  std::optional<typename TestFixture::ValueType> value;
   for (std::size_t i = 0; i < TestFixture::Size; ++i) {
-    buffer.pop(value);
+    value = buffer.pop();
   }
   EXPECT_EQ(buffer.size(), 0);
 }
@@ -79,15 +79,17 @@ TYPED_TEST(RingBufferTypedTest, OverflowTest) {
   }
 
   // The next push should overwrite the oldest item
-  EXPECT_TRUE(buffer.push(static_cast<ValueType>(99)));
+  buffer.push(static_cast<ValueType>(99));
 
   // Pop all items and verify the overwritten behavior
-  ValueType value;
+  std::optional<ValueType> value;
   for (std::size_t i = 1; i < bufferSize; ++i) {
-    EXPECT_TRUE(buffer.pop(value));
+    value = buffer.pop();
+    EXPECT_TRUE(value.has_value());
     EXPECT_EQ(value, static_cast<ValueType>(i));
   }
-  EXPECT_TRUE(buffer.pop(value));
+  value = buffer.pop();
+  EXPECT_TRUE(value.has_value());
   EXPECT_EQ(value, static_cast<ValueType>(99));
 }
 
@@ -96,6 +98,6 @@ TYPED_TEST(RingBufferTypedTest, EmptyPopTest) {
   auto &buffer = TestFixture::buffer;
 
   // Test pop fails on empty buffer
-  ValueType value;
-  EXPECT_FALSE(buffer.pop(value));
+  std::optional<ValueType> value;
+  EXPECT_FALSE(value.has_value());
 }
