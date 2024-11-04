@@ -7,7 +7,7 @@
 namespace fpe {
 namespace rte {
 
-RealTimeExecutor::RealTimeExecutor(/* args */) {
+RealTimeExecutor::RealTimeExecutor() {
   // Create a real-time task using std::thread
   std::thread task_thread(&RealTimeExecutor::realTimeTask, this);
 

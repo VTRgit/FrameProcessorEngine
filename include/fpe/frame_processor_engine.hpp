@@ -1,10 +1,15 @@
 #pragma once
 
-#include <fpe/frame_processor_engine_interface.h>
 #include <fpe/ring_buffer.hpp>
 #include <span>
 
 namespace fpe {
+
+enum class Response {
+  noError,         ///< No error occurred.
+  allocationError, ///< Memory allocation failed.
+  bufferEmpty      ///< The buffer is empty.
+};
 
 class FrameProcessorEngine {
 public:

@@ -50,10 +50,10 @@ private:
 };
 
 int main() {
-  // fpe::RingBuffer<Image> ringBuffers[5];
+  using ImageRingBuffer = fpe::RingBuffer<Image, 10>;
 
-  const std::array<fpe::RingBuffer<Image, 10>, 3> ringBuffers;
-  std::span<const fpe::RingBuffer<Image, 10>> bufferSpan(ringBuffers);
+  const std::array<ImageRingBuffer, 3> ringBuffers;
+  std::span<const ImageRingBuffer> bufferSpan(ringBuffers);
 
   fpe::FrameProcessorEngine frameProcessorEngine(bufferSpan);
   frameProcessorEngine.start();

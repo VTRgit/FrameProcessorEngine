@@ -8,7 +8,6 @@ FetchContent_MakeAvailable(spdlog)
 
 # Add the library
 add_library(FrameProcessorEngineLib
-    frame_processor_engine_interface.cpp
     frame_processor_engine.cpp
     real_time_executor/real_time_executor.cpp
 )
