@@ -7,12 +7,9 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(spdlog)
 
 # Add the library
-add_library(FrameProcessorEngineLib
-    frame_processor_engine.cpp
-    real_time_executor/real_time_executor.cpp
-)
+add_library(FrameProcessorEngineLib INTERFACE)
 
 # Include directories
-target_include_directories(FrameProcessorEngineLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_include_directories(FrameProcessorEngineLib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
-target_link_libraries(FrameProcessorEngineLib PRIVATE spdlog::spdlog)
+target_link_libraries(FrameProcessorEngineLib INTERFACE spdlog::spdlog)

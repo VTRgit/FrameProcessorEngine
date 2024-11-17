@@ -8,6 +8,24 @@ namespace fpe {
 
 template <typename T, std::size_t Capacity> class RingBuffer {
 public:
+  RingBuffer() : buffer_{} {} // Default constructor
+  RingBuffer(RingBuffer &&other) noexcept
+      : buffer_(std::move(other.buffer_)), head_(other.head_.load()),
+        tail_(other.tail_.load()) {
+    other.head_ = other.tail_ = 0; // Reset moved-from object's state
+  }
+
+  // Move assignment operator
+  RingBuffer &operator=(RingBuffer &&other) noexcept {
+    if (this != &other) {
+      buffer_ = std::move(other.buffer_);
+      head_ = other.head_.load();
+      tail_ = other.tail_.load();
+      other.head_ = other.tail_.load() = 0; // Reset moved-from object's state
+    }
+    return *this;
+  }
+
   // Push an item into the buffer, overwriting the oldest if full
   void push(const T &item) {
     auto current_head = head_.load(std::memory_order_relaxed);
@@ -68,7 +86,7 @@ public:
   std::size_t length() const { return Capacity; }
 
 private:
-  std::array<T, Capacity> buffer_{};
+  std::array<T, Capacity> buffer_;
   std::atomic<std::size_t> head_{0};
   std::atomic<std::size_t> tail_{0};
   std::atomic<bool> is_full_{false};

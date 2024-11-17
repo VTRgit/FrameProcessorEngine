@@ -1,28 +1,30 @@
 #pragma once
 
+#include <any>
+#include <fpe/response.hpp>
 #include <fpe/ring_buffer.hpp>
-#include <span>
+#include <memory>
+#include <tuple>
+#include "../src/real_time_executor/real_time_executor.hpp"
 
 namespace fpe {
-
-enum class Response {
-  noError,         ///< No error occurred.
-  allocationError, ///< Memory allocation failed.
-  bufferEmpty      ///< The buffer is empty.
-};
-
 class FrameProcessorEngine {
 public:
-  template <typename T, std::size_t Size>
-  FrameProcessorEngine(std::span<const RingBuffer<T, Size>> inputBuffers);
-
-  ~FrameProcessorEngine();
+  template <typename... Args>
+  FrameProcessorEngine(const std::tuple<Args...> &ringBuffers);
 
   Response start();
   Response stop();
 };
 
-template <typename T, std::size_t Size>
+template <typename... Args>
 FrameProcessorEngine::FrameProcessorEngine(
-    std::span<const RingBuffer<T, Size>> inputBuffers) {}
+    const std::tuple<Args...> &ringBuffers) {
+  fpe::rte::RealTimeExecutor realTimeExecutor(ringBuffers);
+}
+
+Response FrameProcessorEngine::start() { return Response::noError; }
+
+Response FrameProcessorEngine::stop() { return Response::noError; }
+
 } // namespace fpe

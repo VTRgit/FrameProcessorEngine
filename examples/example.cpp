@@ -3,11 +3,9 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <tuple>
 
-constexpr int WIDTH = 128;
-constexpr int HEIGHT = 128;
-
-class Image {
+template <std::size_t WIDTH, std::size_t HEIGHT> class Image {
 public:
   // Pixel representation using 4 channels (R, G, B, A)
   struct Pixel {
@@ -50,14 +48,23 @@ private:
 };
 
 int main() {
-  using ImageRingBuffer = fpe::RingBuffer<Image, 10>;
+  using ImageRingBuffer128 = fpe::RingBuffer<Image<128, 128>, 5>;
+  using ImageRingBuffer256 = fpe::RingBuffer<Image<256, 256>, 4>;
+  using ImageRingBuffer320 = fpe::RingBuffer<Image<320, 320>, 3>;
 
-  const std::array<ImageRingBuffer, 3> ringBuffers;
-  std::span<const ImageRingBuffer> bufferSpan(ringBuffers);
+  ImageRingBuffer128 ringBuff128;
+  ImageRingBuffer256 ringBuff256;
+  ImageRingBuffer320 ringBuff320;
 
-  fpe::FrameProcessorEngine frameProcessorEngine(bufferSpan);
+  std::tuple<ImageRingBuffer128, ImageRingBuffer256, ImageRingBuffer320>
+      ringBuffers(std::move(ringBuff128), std::move(ringBuff256),
+                  std::move(ringBuff320));
+
+  fpe::FrameProcessorEngine frameProcessorEngine(ringBuffers);
   frameProcessorEngine.start();
   frameProcessorEngine.stop();
+
+  ringBuff128.size();
 
   return 0; // Return 0 to indicate successful execution
 }
