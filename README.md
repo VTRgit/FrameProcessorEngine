@@ -21,6 +21,19 @@ newest frame, not a growing queue of old ones. FPE does that plumbing once:
 - **Deterministic offline mode**: process a recorded sequence frame by frame, no drops, same results every time.
 - **Async tasks** with C++20 coroutines: wait for a GPU fence or an inference callback without blocking a thread.
 
+## Build
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFPE_WARNINGS_AS_ERRORS=ON
+cmake --build build && ctest --test-dir build --output-on-failure
+cmake -S . -B build-asan -DFPE_SANITIZE=ON && cmake --build build-asan && ctest --test-dir build-asan
+cmake -S . -B build-tsan -DFPE_TSAN=ON && cmake --build build-tsan && ctest --test-dir build-tsan
+```
+
+Requires CMake ≥ 3.21 and a C++20 compiler (GCC 13, Clang 17, AppleClang 15 or newer). The library
+has no dependencies; GoogleTest is fetched for the tests only. Use it from another project with
+`add_subdirectory(FrameProcessorEngine)` and link `fpe::fpe`.
+
 ## Licence
 
 MIT. See [LICENSE](LICENSE).

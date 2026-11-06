@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "Linux GCC Release",   os: ubuntu-24.04, cxx: g++,     flags: "-DCMAKE_BUILD_TYPE=Release -DFPE_WARNINGS_AS_ERRORS=ON" }
+          - { name: "Linux Clang Release", os: ubuntu-24.04, cxx: clang++, flags: "-DCMAKE_BUILD_TYPE=Release -DFPE_WARNINGS_AS_ERRORS=ON" }
+          - { name: "macOS Release",       os: macos-15,     cxx: clang++, flags: "-DCMAKE_BUILD_TYPE=Release -DFPE_WARNINGS_AS_ERRORS=ON" }
+          - { name: "Linux ASan+UBSan",    os: ubuntu-24.04, cxx: clang++, flags: "-DCMAKE_BUILD_TYPE=Debug -DFPE_SANITIZE=ON" }
+          - { name: "Linux TSan",          os: ubuntu-24.04, cxx: clang++, flags: "-DCMAKE_BUILD_TYPE=Debug -DFPE_TSAN=ON" }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        env:
+          CXX: ${{ matrix.cxx }}
+        run: cmake -S . -B build ${{ matrix.flags }}
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+      - name: Consumer build (add_subdirectory)
+        if: matrix.name == 'Linux GCC Release'
+        run: |
+          cmake -S tests/consumer -B build-consumer
+          cmake --build build-consumer
+          ./build-consumer/consumer
