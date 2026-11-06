@@ -5,8 +5,8 @@ video streams, in parallel, and gives you **one synchronized, timestamped result
 bounded latency.
 
 Status: **pre-release (0.2).** Frames, mailboxes, task graph, real-time and offline modes are in;
-the Android camera adapter (`platform/android`, with an example app in `examples/android`) is in
-review; deadline policies, metrics, coroutine tasks and the Apple adapter are next. See [docs/BACKLOG.md](docs/BACKLOG.md) and
+the Android camera adapter (`platform/android`) is in, with an example app
+(`examples/android`: 60 fps camera, 0.4 ms in FPE on a Pixel 9 Pro); deadline policies, metrics, coroutine tasks and the Apple adapter are next. See [docs/BACKLOG.md](docs/BACKLOG.md) and
 [docs/architecture.md](docs/architecture.md). The early prototype lives in the `v0.1.x` branch.
 
 ## Why

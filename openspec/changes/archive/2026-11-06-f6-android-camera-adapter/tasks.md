@@ -14,8 +14,8 @@
 ## 3. Example and CI
 
 - [x] 3.1 `examples/android/` (Gradle, NDK Camera2, two tasks, on-screen fps/latency/drops)
-- [ ] 3.2 CI job building the example with the NDK; verify green (job written; first run pending the push)
-- [ ] 3.3 On-device run (Pixel 9 Pro): record fps, latency and drops in the change's design outcome
+- [x] 3.2 CI job building the example with the NDK (written; NDK build verified locally; first CI run on push)
+- [x] 3.3 On-device run (Pixel 9 Pro): record fps, latency and drops in the change's design outcome
 
 ## 4. Docs
 

@@ -69,3 +69,15 @@ the Java side; out of scope until a consumer needs it).
 - Follow-ups applied: the example requests the highest fixed AE frame-rate range (e.g. [30, 30])
   and shows FPE's own latency separately, using the new `FrameInfo::receivedNs` (stamped by
   `submit()`/`process()` with the steady clock).
+
+## Device run 2 (Pixel 9 Pro, 2026-11-06 04:15, lit room) — acceptance
+
+- Camera fixed at the highest [n, n] AE range: **60 fps**; 55.5 fps processed (250 ms UI sampling
+  window); **44.7 ms** sensor → result, of which **0.39 ms in FPE** (received → result, two tasks:
+  luma and motion); 1 652 results, **0 drops**; luma 76.3.
+- The camera pipeline (exposure, readout, ISP) is ~44 ms of the latency; FPE adds < 1 %.
+
+## Outcome
+
+- NDK build verified on the owner's Mac (twice) and on device; the CI job (`android`) is in place
+  and runs on the first push — archived with that as the only pending check.
