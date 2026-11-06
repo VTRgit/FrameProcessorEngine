@@ -22,6 +22,16 @@ add_executable(fpe_tests
   test_engine.cpp
   test_version.cpp
 )
+# The Android adapter is compiled for the host against a fake NDK (same C signatures).
+if(NOT ANDROID)
+  target_sources(fpe_tests PRIVATE
+    ${PROJECT_SOURCE_DIR}/platform/android/src/camera.cpp
+    android_host/fake_ndk.cpp
+    test_android_camera.cpp)
+  target_include_directories(fpe_tests BEFORE PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/android_host/fake_ndk
+    ${PROJECT_SOURCE_DIR}/platform/android/include)
+endif()
 target_include_directories(fpe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(fpe_tests PRIVATE fpe::fpe GTest::gtest_main)
 fpe_configure_target(fpe_tests)

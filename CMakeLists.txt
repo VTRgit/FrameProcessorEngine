@@ -29,6 +29,10 @@ target_compile_features(fpe PUBLIC cxx_std_20)
 target_link_libraries(fpe PUBLIC Threads::Threads)
 fpe_configure_target(fpe)
 
+if(ANDROID)
+  add_subdirectory(platform/android)
+endif()
+
 if(FPE_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
