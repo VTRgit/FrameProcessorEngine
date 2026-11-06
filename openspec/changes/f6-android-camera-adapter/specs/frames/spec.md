@@ -12,3 +12,10 @@ A frame's planes SHALL describe, per plane, a data pointer, a row stride and a p
 #### Scenario: Native-only frame
 - **WHEN** a frame wraps a GPU-only buffer
 - **THEN** it reports zero CPU planes and a non-null native buffer pointer
+
+### Requirement: Received time
+The engine SHALL stamp each submitted frame with the time it entered the engine (steady clock), unless the producer already set it.
+
+#### Scenario: Stamped on submit
+- **WHEN** a frame without a received time is submitted
+- **THEN** its result reports a received time not earlier than the capture timestamp and not later than now

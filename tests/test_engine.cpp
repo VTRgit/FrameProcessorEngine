@@ -298,7 +298,8 @@ TEST(EngineRealTime, SlowConsumerGetsNewestResults) {
       if (r.info().frameId <= lastId) {
         increasing = false;
       }
-      if (r.info().timestampNs <= 0 || r.info().timestampNs > nowNs()) {
+      if (r.info().timestampNs <= 0 || r.info().timestampNs > nowNs() ||
+          r.info().receivedNs < r.info().timestampNs || r.info().receivedNs > nowNs()) {
         timestampsOk = false;
       }
       lastId = r.info().frameId;

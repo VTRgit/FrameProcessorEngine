@@ -32,6 +32,13 @@ constexpr std::uint64_t packResult(std::uint32_t job, std::uint32_t gen) {
 constexpr std::uint32_t resultJob(std::uint64_t v) { return static_cast<std::uint32_t>(v & 0xFFFFFFFFu); }
 constexpr std::uint32_t resultGen(std::uint64_t v) { return static_cast<std::uint32_t>(v >> 32); }
 std::size_t alignUp(std::size_t v, std::size_t a) { return (v + a - 1) / a * a; }
+void stampReceived(FrameStore& store, FrameHandle h) noexcept {
+  if (FrameInfo* info = store.mutableInfo(h); info != nullptr && info->receivedNs == 0) {
+    info->receivedNs = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                           std::chrono::steady_clock::now().time_since_epoch())
+                           .count();
+  }
+}
 } // namespace
 
 // ---- TaskInput -------------------------------------------------------------------------------
@@ -453,6 +460,7 @@ Status Engine::submit(std::uint32_t stream, FrameRef&& frame) noexcept {
       frame.store() != &store_) {
     return Status::InvalidArgument;
   }
+  stampReceived(store_, frame.handle());
   Stream& st = streams_[stream];
   st.submitted.fetch_add(1, std::memory_order_relaxed);
   if (auto displaced = st.input.publish(frame.detach())) {
@@ -480,6 +488,7 @@ Status Engine::process(std::uint32_t stream, FrameRef&& frame, FrameResult& out)
       frame.store() != &store_) {
     return Status::InvalidArgument;
   }
+  stampReceived(store_, frame.handle());
   std::uint32_t j = 0;
   if (!startJob(stream, frame.handle(), j)) {
     return Status::PoolExhausted; // frame still owned by the caller's FrameRef

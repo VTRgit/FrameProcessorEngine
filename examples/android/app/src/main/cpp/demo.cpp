@@ -72,10 +72,12 @@ struct Demo {
   fpe::TaskId lumaTask = fpe::kInvalidTask;
   fpe::TaskId motionTask = fpe::kInvalidTask;
   clockid_t sensorClock = CLOCK_MONOTONIC;
+  std::int32_t cameraFps = 0; // fixed rate requested, 0 = camera default
 
   // Written by the result callback (worker threads), read by the UI.
   std::atomic<std::uint64_t> results{0};
-  std::atomic<float> latencyMs{0};
+  std::atomic<float> latencyMs{0};   // sensor timestamp → result
+  std::atomic<float> engineMs{0};    // frame received by FPE → result
   std::atomic<float> luma{0};
   std::atomic<float> motionEnergy{0};
 
@@ -99,8 +101,13 @@ void onResult(fpe::FrameResult&& r, void* ctx) noexcept {
   auto* d = static_cast<Demo*>(ctx);
   const float latency =
       static_cast<float>(nowNs(d->sensorClock) - r.info().timestampNs) / 1e6f;
-  const float prev = d->latencyMs.load(std::memory_order_relaxed);
-  d->latencyMs.store(prev == 0 ? latency : prev * 0.9f + latency * 0.1f, std::memory_order_relaxed);
+  const float engine = static_cast<float>(nowNs(CLOCK_MONOTONIC) - r.info().receivedNs) / 1e6f;
+  auto smooth = [](std::atomic<float>& avg, float v) {
+    const float prev = avg.load(std::memory_order_relaxed);
+    avg.store(prev == 0 ? v : prev * 0.9f + v * 0.1f, std::memory_order_relaxed);
+  };
+  smooth(d->latencyMs, latency);
+  smooth(d->engineMs, engine);
   if (const Luma* l = r.get<Luma>(d->lumaTask)) {
     d->luma.store(l->mean, std::memory_order_relaxed);
   }
@@ -124,6 +131,7 @@ const char* openCamera(Demo& d, ANativeWindow* window) {
     return "no camera list";
   }
   const char* chosen = nullptr;
+  std::int32_t fpsRange[2] = {0, 0};
   for (int i = 0; i < ids->numCameras && chosen == nullptr; ++i) {
     ACameraMetadata* chars = nullptr;
     if (ACameraManager_getCameraCharacteristics(d.manager, ids->cameraIds[i], &chars) != ACAMERA_OK) {
@@ -138,6 +146,19 @@ const char* openCamera(Demo& d, ANativeWindow* window) {
               ACAMERA_OK &&
           source.data.u8[0] == ACAMERA_SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME) {
         d.sensorClock = CLOCK_BOOTTIME;
+      }
+      // Prefer a fixed frame rate (highest [n, n] range): real-time motion analysis needs a steady
+      // rate more than a bright image in low light.
+      ACameraMetadata_const_entry ranges{};
+      if (ACameraMetadata_getConstEntry(chars, ACAMERA_CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES,
+                                        &ranges) == ACAMERA_OK) {
+        for (std::uint32_t k = 0; k + 1 < ranges.count; k += 2) {
+          const std::int32_t lo = ranges.data.i32[k], hi = ranges.data.i32[k + 1];
+          if (lo == hi && hi > fpsRange[1]) {
+            fpsRange[0] = lo;
+            fpsRange[1] = hi;
+          }
+        }
       }
     }
     ACameraMetadata_free(chars);
@@ -158,6 +179,10 @@ const char* openCamera(Demo& d, ANativeWindow* window) {
   ACameraOutputTarget_create(window, &d.target);
   ACameraDevice_createCaptureRequest(d.device, TEMPLATE_PREVIEW, &d.request);
   ACaptureRequest_addTarget(d.request, d.target);
+  if (fpsRange[1] > 0) {
+    ACaptureRequest_setEntry_i32(d.request, ACAMERA_CONTROL_AE_TARGET_FPS_RANGE, 2, fpsRange);
+    d.cameraFps = fpsRange[1];
+  }
   static ACameraCaptureSession_stateCallbacks sessionCallbacks{nullptr, onSessionClosed,
                                                                onSessionReady, onSessionActive};
   if (ACameraDevice_createCaptureSession(d.device, d.outputs, &sessionCallbacks, &d.session) !=
@@ -287,9 +312,10 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_vtrsoftware_fpe_camerademo_NativeD
   char text[640];
   std::snprintf(text, sizeof(text),
                 "FrameProcessorEngine\n"
-                "camera     %dx%d YUV_420_888\n"
+                "camera     %dx%d YUV_420_888 @ %d fps\n"
                 "processed  %.1f fps\n"
                 "latency    %.1f ms (sensor → result)\n"
+                "  in FPE   %.2f ms (received → result)\n"
                 "results    %llu\n"
                 "dropped    %llu\n"
                 "  camera   %llu  (reader had no slot)\n"
@@ -298,7 +324,7 @@ extern "C" JNIEXPORT jstring JNICALL Java_com_vtrsoftware_fpe_camerademo_NativeD
                 "  no job   %llu\n"
                 "luma       %.1f\n"
                 "motion     %.3f",
-                kWidth, kHeight, d->fps, d->latencyMs.load(), static_cast<unsigned long long>(results),
+                kWidth, kHeight, d->cameraFps, d->fps, d->latencyMs.load(), d->engineMs.load(), static_cast<unsigned long long>(results),
                 static_cast<unsigned long long>(rs.acquireFailures + rs.wrapFailures +
                                                 es.replacedInput + es.droppedNoJob),
                 static_cast<unsigned long long>(rs.acquireFailures),
