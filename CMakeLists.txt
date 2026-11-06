@@ -19,6 +19,7 @@ find_package(Threads REQUIRED)
 
 add_library(fpe
   src/engine.cpp
+  src/frame_store.cpp
 )
 add_library(fpe::fpe ALIAS fpe)
 target_include_directories(fpe PUBLIC

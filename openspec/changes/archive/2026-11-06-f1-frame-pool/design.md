@@ -35,3 +35,14 @@ when the last of them finishes, on whatever thread that is.
 - [Release callback runs on a worker thread; some platform APIs want a specific thread] → adapters
   (F6/F7) can post the release to their own thread; documented.
 - [Fixed slot count] → configurable; exhaustion is visible in metrics (F4).
+
+## Outcome (apply notes)
+
+- `FrameHandle` is the 8-byte trivially copyable handle used inside the engine; `FrameRef` is the
+  user-facing RAII owner (store pointer + handle, 16 bytes). The proposal's "8-byte FrameRef" is
+  therefore `FrameHandle`; the spec (handle ≤ 8 bytes) holds.
+- One slot table, two free lists (pool, external), so wrapping external buffers never steals pool
+  slots and vice versa.
+- Pixel formats: Opaque, RGBA8, BGRA8, NV12, NV21, Gray8; up to three planes.
+- Verified: 18/18 tests on GCC and Clang (Werror), ASan+UBSan, TSan; stress test = 4 threads ×
+  250 000 operations.
