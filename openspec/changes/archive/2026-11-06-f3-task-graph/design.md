@@ -45,3 +45,21 @@ needed, as explicit state owned by the task); dynamic graphs after `start()`; dr
   under TSan; consider `std::mutex` fallback behind a flag only for debugging.
 - [Fixed output size wastes memory for small outputs] → default 4 KB × tasks × frames in flight is
   ~200 KB for 6 tasks and 8 frames; configurable.
+
+## Outcome (apply notes)
+
+- Callables are stored at registration behind a virtual `Callable` (allocation is allowed before
+  `start()`), instead of a function pointer + context: lambdas with captures work and the call
+  never allocates.
+- The output size limit is a compile-time constant (`kMaxTaskOutputBytes` = 4096, alignment ≤ 64),
+  not an `EngineConfig` field, so oversized outputs fail at compile time as the spec requires. The
+  compile-failure scenario is enforced by `static_assert` and not by an automated negative test.
+- Dependencies are given as `TaskId`s of already-registered tasks; `addDependency()` adds forward
+  edges, so cycles are possible and rejected by `start()` with the task names in `errorMessage()`.
+- Per-stream `StreamStats` (submitted, replacedInput, droppedNoJob, completed, replacedResults) were
+  added now because tests and the example need them; latency percentiles stay in F4.
+- `stop()` waits for frames in flight, then releases pending frames and untaken results. Do not
+  call `submit()` concurrently with `stop()`; a `FrameResult` must not outlive its `Engine`.
+- Verified: 41/41 tests on GCC and Clang (Werror), ASan+UBSan, TSan, engine and concurrency tests
+  repeated 5×; zero allocations on the producer and every worker for 1 000 frames (offline and real
+  time); the example runs two 60 fps streams at ~8 ms mean latency with a 40 Hz consumer.
