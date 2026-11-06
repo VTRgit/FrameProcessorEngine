@@ -14,13 +14,18 @@ namespace detail {
 class IndexStack;
 }
 
-enum class PixelFormat : std::uint8_t { Opaque, RGBA8, BGRA8, NV12, NV21, Gray8 };
+/// `YUV420` is flexible 4:2:0 (e.g. Android YUV_420_888): three planes whose row and pixel
+/// strides describe the layout. `Opaque` frames may have no CPU planes, only `Planes::native`.
+enum class PixelFormat : std::uint8_t { Opaque, RGBA8, BGRA8, NV12, NV21, Gray8, YUV420 };
 
-/// Up to three planes (e.g. Y and interleaved UV for NV12).
+/// Up to three CPU-visible planes, plus an optional platform buffer (e.g. `AHardwareBuffer*`,
+/// `CVPixelBufferRef`) for tasks that work on the GPU.
 struct Planes {
   std::uint8_t* data[3]{};
-  std::uint32_t stride[3]{};
+  std::uint32_t stride[3]{};      ///< Row stride in bytes.
+  std::uint32_t pixelStride[3]{}; ///< Bytes between adjacent pixels of a row (0: packed/unknown).
   std::uint32_t count = 0;
+  void* native = nullptr;
 };
 
 struct FrameInfo {
