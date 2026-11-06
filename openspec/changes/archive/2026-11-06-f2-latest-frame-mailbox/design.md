@@ -30,3 +30,12 @@ Both sides must never wait for each other: the camera callback cannot block, and
 
 - [A value can be returned for release only on the producer side] → fine for frames (producer owns
   the pool slot until the consumer takes it); documented.
+
+## Outcome (apply notes)
+
+- Cache-line size fixed at 64 bytes instead of `std::hardware_destructive_interference_size`
+  (GCC warns that its value is not ABI-stable across flags).
+- The producer/consumer roles may move between threads if each hand-over is ordered by an
+  acquire/release flag; F3 relies on this (one frame in flight per stream).
+- Verified: 25/25 tests on GCC and Clang (Werror), ASan+UBSan, TSan; 240 fps and unthrottled
+  producers against a randomly sleeping consumer; frames through the mailbox all released.

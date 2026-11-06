@@ -17,6 +17,7 @@ add_executable(fpe_tests
   support/alloc_guard.cpp
   test_alloc_guard.cpp
   test_frame_store.cpp
+  test_latest_mailbox.cpp
   test_version.cpp
 )
 target_include_directories(fpe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

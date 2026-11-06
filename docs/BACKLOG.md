@@ -1,7 +1,7 @@
 # Backlog
 
 Work restarts on `main`. The `v0.1.x` branch (PR #1) is reference only: its lock-free ring buffer
-and tests are reused where they still fit, the rest is replaced. Close PR #1 once F2 is merged.
+and tests are reused where they still fit, the rest is replaced. PR #1 can be closed: F2 replaced its ring buffer.
 
 Priority: P0 = needed for the first consumer prototype, P1 = needed for v1.0.
 

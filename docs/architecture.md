@@ -24,11 +24,12 @@ Status: target design for v1.0. Each part is built by one backlog issue (docs/BA
 
 ## Concepts
 
-- **Frame**: a handle to pixels the engine does not own or copy, plus `{streamId, frameId,
+- **Frame** (`FrameStore`, `FrameHandle`, `FrameRef`, done): a handle to pixels the engine does not own or copy, plus `{streamId, frameId,
   timestampNs, width, height, format}`. Either a slot of a preallocated `FramePool` or an
   `ExternalFrame` wrapping a platform buffer with a release callback (F1).
-- **Mailbox**: per stream, single producer / single consumer, the consumer always takes the newest
-  frame; replaced frames are released and counted (F2).
+- **Mailbox** (`LatestMailbox<T>`, done): triple buffer, single producer / single consumer, the
+  consumer always takes the newest value; a displaced value is handed back to the producer, which
+  releases it; `published`, `taken` and `replaced` counters.
 - **Task**: a user function `Output run(const Frame&, const Inputs&...)` with a fixed-size typed
   output and declared dependencies. Tasks are registered before `start()`; the graph is
   validated (acyclic, types match) at registration (F3).
