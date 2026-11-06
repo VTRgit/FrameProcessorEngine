@@ -1,13 +1,26 @@
-# Project: Real-Time Frame Processing Engine
+# FrameProcessorEngine
 
-This project is a real-time frame processing engine designed to simplify the implementation of multiple processing tasks on each frame from one or more video streams. Its purpose is to maximize machine resource utilization by enabling parallel execution of algorithms and GPU-dependent processes, enhancing the efficiency of computer vision algorithms.
+A real-time frame processing engine in C++20. It runs your tasks on every frame of one or more
+video streams, in parallel, and gives you **one synchronized, timestamped result per frame** with
+bounded latency.
 
-## Key Features
+Status: **pre-release, being rebuilt on `main`.** See [docs/BACKLOG.md](docs/BACKLOG.md) and
+[docs/architecture.md](docs/architecture.md). The early prototype lives in the `v0.1.x` branch.
 
-- **Custom Task Definition**: Allows for defining custom tasks to process frames, with the goal of synchronizing results and ensuring real-time responses.
-- **High-Volume Data Processing**: Particularly useful for applications that require fast and coordinated processing of large volumes of video data.
-- **Efficient Resource Utilization**: Enables parallel execution of algorithms and GPU-dependent tasks for optimal machine resource utilization.
+## Why
 
-## Technical Overview
+Computer-vision pipelines on phones and PCs usually run several algorithms on the same frame
+(detection, segmentation, tracking, a GPU pass) and need their results together, now, for the
+newest frame, not a growing queue of old ones. FPE does that plumbing once:
 
-The project is built on **C++20 coroutines** and follows **real-time programming guidelines**, ensuring optimal performance in high-demand contexts and minimizing data processing latency.
+- **Zero-copy frames**: preallocated slots or external buffers (`AHardwareBuffer`, `CVPixelBuffer`, …) referenced by handle.
+- **Latest frame wins**: slow tasks never build a backlog; dropped frames are counted.
+- **Task graph**: declare tasks and their dependencies; independent tasks run in parallel on a fixed worker pool.
+- **Synchronized results**: one `FrameResult` per frame with every task's output and status.
+- **Real-time friendly**: no allocations, locks or logging on the frame path after `start()`.
+- **Deterministic offline mode**: process a recorded sequence frame by frame, no drops, same results every time.
+- **Async tasks** with C++20 coroutines: wait for a GPU fence or an inference callback without blocking a thread.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE).

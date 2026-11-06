@@ -1,0 +1,32 @@
+schema: spec-driven
+
+context: |
+  Language: English. All artifacts, change names and commit messages MUST be in English,
+  even when the conversation with the user is in Spanish.
+
+  Project: FrameProcessorEngine (FPE), a public MIT C++20 library that runs user-defined tasks
+  on every frame of one or more video streams, in parallel, and delivers one synchronized,
+  timestamped result per frame with bounded latency. It is generic infrastructure: it knows
+  nothing about cameras of a given platform, pose, music or any consuming app.
+  Read README.md, docs/architecture.md and docs/adr/ before proposing.
+
+  Non-negotiable rules (docs/adr/0001-core-rules.md):
+  - No allocation, free, blocking lock, I/O or logging on the frame path after start().
+    A test checks it.
+  - Frames are never copied by the engine: pixels live in preallocated slots or in external
+    buffers the engine only references (handle + release callback).
+  - Real time means "latest frame wins": a slow task never builds a queue; stale frames are
+    dropped and counted.
+  - The core knows no platforms; Android/iOS/desktop capture lives in adapters under platform/.
+  - Offline mode is deterministic: same input frames and tasks, same results, no drops.
+  - No domain code (pose, music, a specific app) in this repo. Consumers live elsewhere.
+  - One change = one backlog issue in docs/BACKLOG.md, named <id>-<slug>.
+
+rules:
+  proposal:
+    - Quote the backlog ID and its acceptance criteria verbatim.
+    - State whether the change touches the frame path; if it does, it requires human approval before apply.
+  design:
+    - If a new architectural decision is taken, add a task for its ADR in docs/adr/.
+  tasks:
+    - Every behaviour change has a test; verify with cmake + ctest (warnings as errors), ASan+UBSan and TSan.
