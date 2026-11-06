@@ -31,7 +31,8 @@ struct Planes {
 struct FrameInfo {
   std::uint32_t streamId = 0;
   std::uint64_t frameId = 0;
-  std::int64_t timestampNs = 0;
+  std::int64_t timestampNs = 0; ///< Capture time, in the source's clock (e.g. the camera sensor's).
+  std::int64_t receivedNs = 0;  ///< When the frame entered the engine (steady clock); set by submit/process if 0.
   std::uint32_t width = 0;
   std::uint32_t height = 0;
   PixelFormat format = PixelFormat::Opaque;

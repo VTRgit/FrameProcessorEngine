@@ -57,3 +57,15 @@ the Java side; out of scope until a consumer needs it).
 - Not yet compiled with the real NDK (none in the authoring environment): the example and the
   adapter are first built by the new CI job, then on the owner's Mac. Keep this change open until
   CI is green and the on-device run (task 3.3) is recorded.
+
+## Device run 1 (Pixel 9 Pro, 2026-11-06 04:04, dark room)
+
+- Built with the real NDK on the owner's Mac (`./gradlew assembleDebug`) and run on the Pixel 9 Pro.
+- 640×480 YUV_420_888: 846 results, **0 drops** of any kind; 15.6 fps processed; 149.9 ms from
+  sensor timestamp to result; luma 4.1 (almost black).
+- Reading: in low light the camera's auto-exposure lowers the frame rate and lengthens exposure;
+  the sensor timestamp marks the start of exposure, so the camera pipeline dominates the latency.
+  The engine kept up (no input replaced, no job shortage).
+- Follow-ups applied: the example requests the highest fixed AE frame-rate range (e.g. [30, 30])
+  and shows FPE's own latency separately, using the new `FrameInfo::receivedNs` (stamped by
+  `submit()`/`process()` with the steady clock).
