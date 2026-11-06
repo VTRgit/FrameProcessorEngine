@@ -98,7 +98,7 @@ Engine::~Engine() {
 
 TaskId Engine::registerTask(std::string_view name, std::initializer_list<TaskId> deps,
                             std::size_t size, std::size_t align, const void* type,
-                            std::unique_ptr<Callable> callable) {
+                            std::uint16_t lane, std::unique_ptr<Callable> callable) {
   auto fail = [&](Status s, std::string msg) {
     if (pendingError_ == Status::Ok) {
       pendingError_ = s;
@@ -131,6 +131,7 @@ TaskId Engine::registerTask(std::string_view name, std::initializer_list<TaskId>
   spec.size = size;
   spec.align = align;
   spec.type = type;
+  spec.lane = lane;
   spec.callable = std::move(callable);
   tasks_.push_back(std::move(spec));
   return static_cast<TaskId>(tasks_.size() - 1);
@@ -172,6 +173,13 @@ Status Engine::start() {
   }
 
   const std::size_t n = tasks_.size();
+  for (const auto& t : tasks_) {
+    if (t.lane != kAnyWorker && t.lane >= config_.lanes) {
+      error_ = "task '" + t.name + "' is pinned to lane " + std::to_string(t.lane) + " but the engine has " +
+               std::to_string(config_.lanes) + " lane(s)";
+      return Status::InvalidArgument;
+    }
+  }
   // Cycle detection (Kahn) and dependency counts.
   depCount_.assign(n, 0);
   std::vector<std::vector<TaskId>> dependents(n);
@@ -255,6 +263,15 @@ Status Engine::start() {
   for (std::uint32_t i = 0; i < config_.workers; ++i) {
     workers_.emplace_back([this, i] { workerLoop(i); });
   }
+  laneQueues_.clear();
+  laneSignal_ = std::make_unique<std::atomic<std::uint32_t>[]>(std::max<std::uint32_t>(config_.lanes, 1));
+  for (std::uint32_t l = 0; l < config_.lanes; ++l) {
+    laneQueues_.push_back(std::make_unique<detail::MpmcQueue<std::uint32_t>>(std::max<std::size_t>(jobs * n, 2)));
+  }
+  lanes_.reserve(config_.lanes);
+  for (std::uint32_t l = 0; l < config_.lanes; ++l) {
+    lanes_.emplace_back([this, l] { laneLoop(l); });
+  }
   error_.clear();
   accepting_.store(true, std::memory_order_release);
   running_.store(true, std::memory_order_release);
@@ -273,10 +290,18 @@ void Engine::stop() {
   workersRun_.store(false, std::memory_order_release);
   signal_.fetch_add(1, std::memory_order_release);
   signal_.notify_all();
+  for (std::uint32_t l = 0; l < config_.lanes; ++l) {
+    laneSignal_[l].fetch_add(1, std::memory_order_release);
+    laneSignal_[l].notify_all();
+  }
   for (auto& w : workers_) {
     w.join();
   }
   workers_.clear();
+  for (auto& l : lanes_) {
+    l.join();
+  }
+  lanes_.clear();
   // Release frames that never started and results nobody took.
   for (std::uint32_t s = 0; s < config_.streams; ++s) {
     if (auto f = streams_[s].input.take()) {
@@ -302,11 +327,45 @@ TaskStatus Engine::taskStatus(std::uint32_t job, TaskId task) const noexcept {
 }
 
 void Engine::enqueue(std::uint32_t job, TaskId task) noexcept {
-  const bool ok = queue_->push((job << 16) | task);
+  const std::uint16_t lane = tasks_[task].lane;
+  const std::uint32_t item = (job << 16) | task;
+  if (lane != kAnyWorker) {
+    const bool ok = laneQueues_[lane]->push(item);
+    FPE_ASSERT(ok, "lane queue full (cannot happen: one slot per job and task)");
+    (void)ok;
+    laneSignal_[lane].fetch_add(1, std::memory_order_release);
+    laneSignal_[lane].notify_one();
+    return;
+  }
+  const bool ok = queue_->push(item);
   FPE_ASSERT(ok, "work queue full (cannot happen: one slot per job and task)");
   (void)ok;
   signal_.fetch_add(1, std::memory_order_release);
   signal_.notify_one();
+}
+
+void Engine::laneLoop(std::uint32_t lane) noexcept {
+  if (config_.onLaneStart.fn != nullptr) {
+    config_.onLaneStart.fn(lane, config_.onLaneStart.context);
+  }
+  auto& q = *laneQueues_[lane];
+  std::atomic<std::uint32_t>& signal = laneSignal_[lane];
+  std::uint32_t item = 0;
+  for (;;) {
+    if (q.pop(item)) {
+      runItem(item);
+      continue;
+    }
+    const std::uint32_t seen = signal.load(std::memory_order_acquire);
+    if (q.pop(item)) {
+      runItem(item);
+      continue;
+    }
+    if (!workersRun_.load(std::memory_order_acquire)) {
+      return;
+    }
+    signal.wait(seen, std::memory_order_acquire);
+  }
 }
 
 bool Engine::startJob(std::uint32_t stream, FrameHandle frame, std::uint32_t& jobOut) noexcept {

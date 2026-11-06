@@ -30,6 +30,14 @@ template <class T> struct TypeTag {
 using TaskId = std::uint16_t;
 inline constexpr TaskId kInvalidTask = 0xFFFF;
 
+/// Placement of a task: any worker of the pool (default) or a dedicated lane thread.
+inline constexpr std::uint16_t kAnyWorker = 0xFFFF;
+struct TaskOptions {
+  /// Lane index in [0, EngineConfig::lanes): every invocation runs on that lane's thread (needed
+  /// by GPU contexts such as EGL or LiteRT's GPU delegate). kAnyWorker: any worker.
+  std::uint16_t lane = kAnyWorker;
+};
+
 /// Largest task output, in bytes. Outputs live in preallocated per-frame storage.
 inline constexpr std::size_t kMaxTaskOutputBytes = 4096;
 inline constexpr std::size_t kMaxTaskOutputAlign = 64;
@@ -66,6 +74,10 @@ struct EngineConfig {
   Mode mode = Mode::RealTime;
   WorkerHook onWorkerStart{};
   ResultCallback onResult{};
+  /// Dedicated threads for pinned tasks (TaskOptions::lane), in addition to `workers`.
+  std::uint32_t lanes = 0;
+  /// Called once on each lane thread before it runs any task (create GPU contexts here).
+  WorkerHook onLaneStart{};
 };
 
 struct StreamStats {
@@ -142,7 +154,8 @@ public:
   /// concurrently for different frames and must not throw.
   /// Errors (duplicate name, unknown dependency, after start) are reported by start().
   template <class Output, class F>
-  TaskId addTask(std::string_view name, F&& fn, std::initializer_list<TaskId> dependsOn = {});
+  TaskId addTask(std::string_view name, F&& fn, std::initializer_list<TaskId> dependsOn = {},
+                 TaskOptions options = {});
 
   /// Adds a dependency after both tasks exist (allows forward references; cycles are rejected
   /// by start()).
@@ -201,6 +214,7 @@ private:
     std::size_t size = 0;
     std::size_t align = 1;
     const void* type = nullptr;
+    std::uint16_t lane = kAnyWorker;
     std::unique_ptr<Callable> callable;
   };
 
@@ -208,8 +222,10 @@ private:
   struct Stream;
 
   TaskId registerTask(std::string_view name, std::initializer_list<TaskId> deps, std::size_t size,
-                      std::size_t align, const void* type, std::unique_ptr<Callable> callable);
+                      std::size_t align, const void* type, std::uint16_t lane,
+                      std::unique_ptr<Callable> callable);
   void workerLoop(std::uint32_t index) noexcept;
+  void laneLoop(std::uint32_t lane) noexcept;
   void runItem(std::uint32_t item) noexcept;
   bool startJob(std::uint32_t stream, FrameHandle frame, std::uint32_t& jobOut) noexcept;
   void finishJob(std::uint32_t job) noexcept;
@@ -244,6 +260,9 @@ private:
   std::unique_ptr<detail::MpmcQueue<std::uint32_t>> queue_;
   std::unique_ptr<Stream[]> streams_;
   std::vector<std::thread> workers_;
+  std::vector<std::unique_ptr<detail::MpmcQueue<std::uint32_t>>> laneQueues_;
+  std::unique_ptr<std::atomic<std::uint32_t>[]> laneSignal_;
+  std::vector<std::thread> lanes_;
 
   std::atomic<bool> running_{false};
   std::atomic<bool> accepting_{false};
@@ -255,7 +274,8 @@ private:
 // ---- templates -------------------------------------------------------------------------------
 
 template <class Output, class F>
-TaskId Engine::addTask(std::string_view name, F&& fn, std::initializer_list<TaskId> dependsOn) {
+TaskId Engine::addTask(std::string_view name, F&& fn, std::initializer_list<TaskId> dependsOn,
+                       TaskOptions options) {
   static_assert(std::is_trivially_copyable_v<Output>, "task outputs must be trivially copyable");
   static_assert(std::is_default_constructible_v<Output>, "task outputs must be default constructible");
   static_assert(sizeof(Output) <= kMaxTaskOutputBytes, "task output exceeds kMaxTaskOutputBytes");
@@ -263,7 +283,7 @@ TaskId Engine::addTask(std::string_view name, F&& fn, std::initializer_list<Task
   static_assert(std::is_invocable_v<F&, const TaskInput&, Output&>,
                 "task must be callable as fn(const TaskInput&, Output&)");
   return registerTask(name, dependsOn, sizeof(Output), alignof(Output), &detail::TypeTag<Output>::id,
-                      std::make_unique<CallableImpl<Output, F>>(std::forward<F>(fn)));
+                      options.lane, std::make_unique<CallableImpl<Output, F>>(std::forward<F>(fn)));
 }
 
 template <class T> const T& TaskInput::input(TaskId dep) const noexcept {

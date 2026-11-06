@@ -20,6 +20,7 @@ add_executable(fpe_tests
   test_latest_mailbox.cpp
   test_mpmc_queue.cpp
   test_engine.cpp
+  test_pinned_tasks.cpp
   test_version.cpp
 )
 # The Android adapter is compiled for the host against a fake NDK (same C signatures).

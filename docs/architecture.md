@@ -35,6 +35,8 @@ Status: F0–F3 done (frames, mailboxes, task graph, real-time and offline modes
   the outputs of dependencies. The graph is validated at `start()` (ADR 0003).
 - **FrameResult** (done): one per processed frame, with every task's output or status (`Ok`,
   `Failed`, `Skipped`). Delivered through a per-stream result mailbox (latest wins) or a callback.
+- **Lanes** (done, F8): dedicated threads for pinned tasks (`TaskOptions{.lane = n}`), for work
+  that must stay on one thread such as a GPU context; `onLaneStart` runs on the lane first.
 - **Policy**: what happens when a new frame arrives while the previous one is still being processed:
   `SkipNew` (finish the current one) or `SupersedeOld` (cancel pending tasks of the old frame) (F4).
 - **Clock**: injected; monotonic by default; a fake clock in tests (F4).
