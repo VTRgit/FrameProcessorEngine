@@ -27,3 +27,10 @@ way to assert "no allocation" that every later change uses.
 ## Risks / Trade-offs
 
 - [FetchContent needs network in CI] → acceptable; offline builds can pass `-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST`.
+
+## Outcome (apply notes)
+
+- The library is a `STATIC` target from F0 on (a placeholder `src/engine.cpp`) instead of
+  `INTERFACE`, so consumers and CI never change target type later.
+- The `add_subdirectory` scenario is checked by `tests/consumer/` in CI (GCC job).
+- Verified locally: GCC 13 and Clang 18 with warnings as errors, ASan+UBSan, TSan; 6/6 tests.
