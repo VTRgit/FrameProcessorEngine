@@ -4,7 +4,8 @@ A real-time frame processing engine in C++20. It runs your tasks on every frame 
 video streams, in parallel, and gives you **one synchronized, timestamped result per frame** with
 bounded latency.
 
-Status: **pre-release, being rebuilt on `main`.** See [docs/BACKLOG.md](docs/BACKLOG.md) and
+Status: **pre-release (0.2).** Frames, mailboxes, task graph, real-time and offline modes are in;
+deadline policies, metrics, coroutine tasks and camera adapters are next. See [docs/BACKLOG.md](docs/BACKLOG.md) and
 [docs/architecture.md](docs/architecture.md). The early prototype lives in the `v0.1.x` branch.
 
 ## Why
@@ -20,6 +21,35 @@ newest frame, not a growing queue of old ones. FPE does that plumbing once:
 - **Real-time friendly**: no allocations, locks or logging on the frame path after `start()`.
 - **Deterministic offline mode**: process a recorded sequence frame by frame, no drops, same results every time.
 - **Async tasks** with C++20 coroutines: wait for a GPU fence or an inference callback without blocking a thread.
+
+## Usage
+
+```cpp
+fpe::FrameStore store({.poolSlots = 8, .poolSlotBytes = 320 * 240, .externalSlots = 4});
+fpe::Engine engine(store, {.workers = 3, .streams = 1, .maxFramesInFlight = 4});
+
+auto brightness = engine.addTask<Brightness>("brightness", computeBrightness);
+auto edges      = engine.addTask<EdgeCount>("edges", countEdges);
+auto summary    = engine.addTask<Summary>("summary",
+    [=](const fpe::TaskInput& in, Summary& out) {
+      out.brightness = in.input<Brightness>(brightness).mean;
+      out.edges = in.input<EdgeCount>(edges).edges;
+    },
+    {brightness, edges});
+engine.start();
+
+// Capture thread: wrap the camera buffer (no copy) and submit it.
+fpe::FrameHandle h;
+store.wrapExternal(info, planes, releaseCameraBuffer, cameraBuffer, h);
+engine.submit(0, fpe::FrameRef(store, h));
+
+// Consumer: always the newest finished frame.
+if (fpe::FrameResult r = engine.takeResult(0)) {
+  use(*r.get<Summary>(summary), r.info().timestampNs);
+}
+```
+
+See `examples/hello_fpe.cpp` for a complete two-stream program.
 
 ## Build
 
