@@ -36,14 +36,14 @@ private:
 
 } // namespace fpe::test
 
-/// Runs `block` with the current thread armed and fails the test if anything was allocated or
+/// Runs the block with the current thread armed and fails the test if anything was allocated or
 /// freed on an armed thread meanwhile.
-#define EXPECT_NO_ALLOCATIONS(block)                                                               \
+#define EXPECT_NO_ALLOCATIONS(...)                                                               \
   do {                                                                                             \
     std::int64_t fpeAllocs_ = 0;                                                                   \
     {                                                                                              \
       ::fpe::test::AllocGuard fpeGuard_;                                                           \
-      block;                                                                                       \
+      __VA_ARGS__;                                                                                 \
       fpeAllocs_ = fpeGuard_.count();                                                              \
     }                                                                                              \
     EXPECT_EQ(fpeAllocs_, 0) << "heap allocations or frees on an armed thread";                    \
