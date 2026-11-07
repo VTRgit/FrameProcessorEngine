@@ -6,7 +6,7 @@ latency. **Only that.** Read `README.md` and `docs/architecture.md` before touch
 
 ## Public repo
 
-This repository is public. Never commit anything from private VTR Software repositories, and never
+This repository is public. Never commit anything from private VTRsoftware repositories, and never
 name them or their plans: no models, no feature extraction, no application logic, no product docs.
 Examples and tests use synthetic frames only.
 
