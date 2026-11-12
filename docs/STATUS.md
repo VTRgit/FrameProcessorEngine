@@ -2,6 +2,18 @@
 
 Update at the end of every work session (most recent first).
 
+## 2026-11-12 — F7
+
+**Done**
+- F7 Apple camera adapter (`platform/apple`): `CVPixelBuffer` → external frames without copying
+  (NV12, BGRA8, Opaque), `SampleBufferSource` for `AVCaptureVideoDataOutput`, macOS demo
+  (`examples/macos`). 62 tests on macOS (Werror, ASan+UBSan, TSan); `fpe::apple` builds for iOS.
+- `TaskInput::self_` marked `[[maybe_unused]]` (read only by `FPE_ASSERT`; release builds warned).
+
+**Next**
+- F4 (deadline policies, latency percentiles), F5 (coroutine tasks).
+- Run the macOS demo from a terminal with the camera permission.
+
 ## 2026-11-06 — F0–F3, F6, F8
 
 **Done**

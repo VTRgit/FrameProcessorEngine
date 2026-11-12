@@ -33,6 +33,11 @@ if(NOT ANDROID)
     ${CMAKE_CURRENT_SOURCE_DIR}/android_host/fake_ndk
     ${PROJECT_SOURCE_DIR}/platform/android/include)
 endif()
+# The Apple adapter is tested on the macOS host with real CoreVideo/CoreMedia objects.
+if(APPLE AND NOT IOS)
+  target_sources(fpe_tests PRIVATE test_apple_camera.cpp)
+  target_link_libraries(fpe_tests PRIVATE fpe::apple)
+endif()
 target_include_directories(fpe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(fpe_tests PRIVATE fpe::fpe GTest::gtest_main)
 fpe_configure_target(fpe_tests)

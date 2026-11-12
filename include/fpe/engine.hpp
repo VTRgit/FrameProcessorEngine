@@ -106,7 +106,7 @@ private:
       : engine_(&e), job_(job), self_(self) {}
   const Engine* engine_;
   std::uint32_t job_;
-  TaskId self_;
+  [[maybe_unused]] TaskId self_; // read only by FPE_ASSERT (compiled out in release builds)
 };
 
 /// One processed frame: the frame plus every task's status and output. Move-only; releasing it

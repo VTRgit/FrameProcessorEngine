@@ -27,6 +27,8 @@ Status: F0–F3 done (frames, mailboxes, task graph, real-time and offline modes
 - **Frame** (`FrameStore`, `FrameHandle`, `FrameRef`, done): a handle to pixels the engine does not own or copy, plus `{streamId, frameId,
   timestampNs, width, height, format}`. Either a slot of a preallocated `FramePool` or an
   `ExternalFrame` wrapping a platform buffer with a release callback (F1).
+  Capture adapters build on it: `platform/android` (AImage, AHardwareBuffer; F6) and
+  `platform/apple` (CVPixelBuffer from AVFoundation; F7).
 - **Mailbox** (`LatestMailbox<T>`, done): triple buffer, single producer / single consumer, the
   consumer always takes the newest value; a displaced value is handed back to the producer, which
   releases it; `published`, `taken` and `replaced` counters.
