@@ -2,6 +2,13 @@
 
 Update at the end of every work session (most recent first).
 
+## 2026-11-13 — F9
+
+**Done**
+- F9: the `Linux TSan` CI job had never linked (the test allocation guard replaced
+  `operator new`/`delete`, which clang's Linux TSan runtime defines too). Under `FPE_TSAN` the guard
+  is now unavailable and its 3 counting tests are skipped; CI green on all six jobs.
+
 ## 2026-11-12 — F7
 
 **Done**
