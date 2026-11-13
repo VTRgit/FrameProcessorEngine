@@ -23,6 +23,13 @@ add_executable(fpe_tests
   test_pinned_tasks.cpp
   test_version.cpp
 )
+# TSan's runtime defines the global operator new/delete itself, so the allocation guard cannot
+# replace them there (F9): its counting checks are skipped in that build only.
+if(FPE_TSAN)
+  target_compile_definitions(fpe_tests PRIVATE FPE_TEST_ALLOC_GUARD=0)
+else()
+  target_compile_definitions(fpe_tests PRIVATE FPE_TEST_ALLOC_GUARD=1)
+endif()
 # The Android adapter is compiled for the host against a fake NDK (same C signatures).
 if(NOT ANDROID)
   target_sources(fpe_tests PRIVATE

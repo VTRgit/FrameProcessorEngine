@@ -11,9 +11,13 @@ namespace {
 // Keeps the compiler from eliding new/delete pairs (allowed since C++14).
 template <class T> void escape(T* p) { asm volatile("" : : "g"(p) : "memory"); }
 
+#define SKIP_WITHOUT_GUARD()                                                                       \
+  if (!fpe::test::allocGuardAvailable()) GTEST_SKIP() << "allocation guard unavailable (TSan build)"
+
 } // namespace
 
 TEST(AllocGuard, CatchesAnAllocation) {
+  SKIP_WITHOUT_GUARD();
   fpe::test::AllocGuard guard;
   auto* p = new int(42);
   escape(p);
@@ -44,6 +48,7 @@ TEST(AllocGuard, NoAllocationsMacroPassesOnPlainCode) {
 }
 
 TEST(AllocGuard, CatchesAnAllocationOnAnotherArmedThread) {
+  SKIP_WITHOUT_GUARD();
   fpe::test::AllocGuard guard;
   std::int64_t beforeThread = guard.count();
   std::int64_t onThread = 0;
@@ -62,6 +67,7 @@ TEST(AllocGuard, CatchesAnAllocationOnAnotherArmedThread) {
 }
 
 TEST(AllocGuard, UnarmedThreadsAreNotCounted) {
+  SKIP_WITHOUT_GUARD();
   std::int64_t start = fpe::test::allocationCount();
   std::thread t([] {
     auto* p = new double(1.0);

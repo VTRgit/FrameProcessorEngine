@@ -9,6 +9,7 @@ namespace {
 std::atomic<std::int64_t> gCount{0};
 thread_local bool tArmed = false;
 
+#if FPE_TEST_ALLOC_GUARD
 inline void note() noexcept {
   if (tArmed) {
     gCount.fetch_add(1, std::memory_order_relaxed);
@@ -50,10 +51,13 @@ void deallocate(void* p) noexcept {
   }
   std::free(p);
 }
+#endif
 
 } // namespace
 
 namespace fpe::test {
+
+bool allocGuardAvailable() noexcept { return FPE_TEST_ALLOC_GUARD != 0; }
 
 void armCurrentThread() noexcept { tArmed = true; }
 void disarmCurrentThread() noexcept { tArmed = false; }
@@ -66,6 +70,7 @@ std::int64_t AllocGuard::count() const noexcept { return allocationCount() - sta
 
 } // namespace fpe::test
 
+#if FPE_TEST_ALLOC_GUARD
 // Global replacements. Only linked into the test executable.
 void* operator new(std::size_t size) { return allocate(size); }
 void* operator new[](std::size_t size) { return allocate(size); }
@@ -112,3 +117,4 @@ void operator delete(void* p, std::size_t, std::align_val_t) noexcept { dealloca
 void operator delete[](void* p, std::size_t, std::align_val_t) noexcept { deallocate(p); }
 void operator delete(void* p, std::align_val_t, const std::nothrow_t&) noexcept { deallocate(p); }
 void operator delete[](void* p, std::align_val_t, const std::nothrow_t&) noexcept { deallocate(p); }
+#endif // FPE_TEST_ALLOC_GUARD

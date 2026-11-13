@@ -5,10 +5,15 @@
 // The test executable replaces the global operator new/delete. While a thread is armed, every
 // allocation and every free on that thread is counted. Engine worker threads can be armed from
 // the engine's thread hook, so the guard covers the whole frame path, not just the test thread.
+// Not in TSan builds (see allocGuardAvailable()).
 
 #include <cstdint>
 
 namespace fpe::test {
+
+/// False in builds whose sanitizer runtime owns operator new/delete (TSan): nothing is counted,
+/// so the no-allocation checks pass trivially there; every other build counts.
+bool allocGuardAvailable() noexcept;
 
 /// Arms or disarms counting on the calling thread.
 void armCurrentThread() noexcept;
